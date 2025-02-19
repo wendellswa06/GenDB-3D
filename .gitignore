@@ -1,0 +1,10 @@
+__pycache__
+venv
+TRELLIS
+node_modules
+weights
+outputs
+vali-venv
+validation/output_images
+img.jpg
+mesh.glb
