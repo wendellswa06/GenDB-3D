@@ -76,14 +76,15 @@ def load_image(image_buffer):
     return preprocess(image).unsqueeze(0).to(device)
 
 
-def render_mesh(obj_file: str, distance: float = 0.75, elevation: float = 15, azimuth: float = 0.0, 
-                image_size: int = 512, angle_step: int = 24):
+def render_mesh(obj_file: str, distance: float = 0.75, elevation: float = 10, azimuth: float = 0.0, 
+                image_size: int = 200, angle_step: int = 48):
     render_images = []
     before_render = []
     try:
         # Load the mesh
+        print(obj_file)
         mesh = load_glb_as_mesh(glb_file=obj_file, device=device)
-        print(mesh)
+        print("The mesh is ", mesh)
         
         # Renderer setup
         R, T = look_at_view_transform(distance, elevation, azimuth, at=((0, 0, 1),))
@@ -112,7 +113,10 @@ def render_mesh(obj_file: str, distance: float = 0.75, elevation: float = 15, az
         )
 
         # Generate and save images
-        angles = range(0, 360, angle_step)  # Angles from 0 to 330 degrees with step size
+        angles = range(24, 360, angle_step)  # Angles from 0 to 330 degrees with step size
+
+        rendered_image_paths = []
+
         for angle in angles:
             R, T = look_at_view_transform(distance, elevation, angle)
             cameras = PerspectiveCameras(device=device, R=R, T=T)
@@ -141,13 +145,21 @@ def render_mesh(obj_file: str, distance: float = 0.75, elevation: float = 15, az
             
             # Ensure the image tensor is in the [0, 1] range
             image = (image - image.min()) / (image.max() - image.min())
-            
+
+            image_filename = os.path.join(OUTPUT_DIR, f'image_{angle}.jpeg')
+
+            rendered_image_paths.append(str(image_filename))
+
+            ndarr = image.mul(255).clamp(0, 255).byte().numpy().transpose(1, 2, 0)  # Convert to [H, W, C] format
+            pil_images = Image.fromarray(ndarr, 'RGB')  # Specify 'RGB' since we don't need alpha for JPEG
+            pil_images.save(image_filename, format='JPEG')  # Save as JPEG
+
             # Composite the image with transparency
             image = torch.cat([image, alpha], dim=0)  # Add alpha channel to the image
             
             # Save rendered images locally
-            image_filename = os.path.join(OUTPUT_DIR, f'image_{angle}.png')
-            save_image(image, image_filename)  # Save image
+            # image_filename = os.path.join(OUTPUT_DIR, f'image_{angle}.jpeg')
+            # pil_image.convert("RGB").save(image_filename, format='JPEG') # save images
             
             # Convert to [H, W, C] format with RGBA
             ndarr = image.mul(255).clamp(0, 255).byte().numpy().transpose(1, 2, 0)
@@ -161,11 +173,13 @@ def render_mesh(obj_file: str, distance: float = 0.75, elevation: float = 15, az
             loaded_image = load_image(buffer)
             render_images.append(loaded_image)
             
-        print(len(render_images))
+        print("The length of render_images is ", len(render_images))
             
-        return render_images, before_render
+        return render_images, before_render, rendered_image_paths
     except Exception as e:
+        print("Erorr occurs during the Rendering meshing, Incorrect formatted file")
         raise HTTPException(status_code=500, detail=str(e))
+
 
 def render(
     prompt: str, datadir: str,
@@ -180,6 +194,9 @@ def render(
     
     print(f"output mesh:{len(image_files)}")
     if not image_files:
+        print("Failed during the file rendering, Incorrect formatting files")
         raise HTTPException(status_code=500, detail="Rendering failed")
     
     return image_files
+
+

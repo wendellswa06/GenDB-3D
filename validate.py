@@ -42,20 +42,28 @@ def validate(prompt: str, datadir: str):
         prompt = prompt + " " + EXTRA_PROMPT
         id = 0
         
-        rendered_images, before_images = render(prompt, datadir)
+        rendered_images, before_images, render_image_paths = render(prompt, datadir)
 
         image_descs = get_render_img_descs()
         print(image_descs)
 
         render_vertors = text_similarity_model.fetch_vectors(image_descs)
 
+        prompt_vector = text_similarity_model.fetch_vectors([prompt])[0]
+
         prev_img_path = os.path.join(datadir, f"img.jpg")
         prev_img = load_image(prev_img_path)
+        prev_img_desc = get_prev_img_desc(prev_img_path)
+        prev_img_vector = text_similarity_model.fetch_vectors([prev_img_desc])
         
+        image_paths = render_image_paths + [prev_img_path]
+        is_like_real_object_image = image_vision_model.analyze_images(image_paths)
+
         Q0 = quality_model.compute_quality(prev_img_path)
         print(f"Q0: {Q0}")
         
-        S0 = text_model.compute_clip_similarity_prompt(prompt, prev_img_path) if Q0 > 0.15 else 0
+        # S0 = text_model.compute_clip_similarity_prompt(prompt, prev_img_path) if Q0 > 0.15 else 0
+        S0 = text_similarity_model.compute_semantic_similarity(prompt_vector, prev_img_vector)[0] if Q0 > 0.15 else 0
         print(f"S0: {S0} - taken time: {time.time() - start}")
         
         if S0 < 0.23:
