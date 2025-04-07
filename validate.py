@@ -4,6 +4,10 @@ import numpy as np
 from validation.text_clip_model import TextModel
 from validation.image_clip_model import ImageModel
 from validation.quality_model import QualityModel
+from validation.text_similarity_model import TextSimilarityModel
+from image_insight import ImageAnalysisToolkit
+
+from claude_integration import get_render_img_descs, get_prev_img_desc
 
 from rendering import render, load_image
 
@@ -14,6 +18,8 @@ EXTRA_PROMPT = 'anime'
 text_model = TextModel()
 image_model = ImageModel()
 quality_model = QualityModel()
+text_similarity_model = TextSimilarityModel()
+image_vision_model = ImageAnalysisToolkit()
 
 
         
@@ -37,16 +43,21 @@ def validate(prompt: str, datadir: str):
         id = 0
         
         rendered_images, before_images = render(prompt, datadir)
-        
+
+        image_descs = get_render_img_descs()
+        print(image_descs)
+
+        render_vertors = text_similarity_model.fetch_vectors(image_descs)
+
         prev_img_path = os.path.join(datadir, f"img.jpg")
         prev_img = load_image(prev_img_path)
         
         Q0 = quality_model.compute_quality(prev_img_path)
         print(f"Q0: {Q0}")
         
-        S0 = text_model.compute_clip_similarity_prompt(prompt, prev_img_path) if Q0 > 0.4 else 0
+        S0 = text_model.compute_clip_similarity_prompt(prompt, prev_img_path) if Q0 > 0.15 else 0
         print(f"S0: {S0} - taken time: {time.time() - start}")
-        return Q0, S0
+        
         if S0 < 0.23:
             return 0
         
