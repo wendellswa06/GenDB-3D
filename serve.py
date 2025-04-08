@@ -25,7 +25,7 @@ def get_args():
     parser.add_argument("--mv23d_cfg_path", default="./svrm/configs/svrm.yaml", type=str)
     parser.add_argument("--mv23d_ckt_path", default="weights/svrm/svrm.safetensors", type=str)
     parser.add_argument("--text2image_path", default="weights/hunyuanDiT", type=str)
-    parser.add_argument("--save_folder", default="/workspace/DB", type=str)
+    parser.add_argument("--save_folder", default="/workspace/NewDB", type=str)
     parser.add_argument("--device", default="cuda:0", type=str)
     parser.add_argument("--t2i_seed", default=42, type=int)
     parser.add_argument("--t2i_steps", default=25, type=int)
@@ -138,6 +138,32 @@ async def text_to_3d(data: RequestData):
                 break
         except:
             print("Failed in validation, hehehe")
+    
+    try:
+        gen_3d(res_rgb_pil, output_folder)
+        print(f"Successfully generated: {output_folder}")
+        print(f"Generation time: {time.time() - start}")
+        return {"success": True, "path": output_folder}
+    except:
+        return {"success": False, "path": output_folder}
+
+@app.post("/simple_generate_from_text")
+async def text_to_3d(data: RequestData):
+    print(data)
+    output_folder = data.output_dir
+    prompt = data.prompt
+    os.makedirs(output_folder, exist_ok=True)
+    extra_prompt = "Angled front view, solid color background, 3d model, high quality",
+        
+    # Stage 1: Text to Image
+    start = time.time()
+    enhanced_prompt = f"{prompt}, {extra_prompt}"
+    res_rgb_pil = text_to_image_model(
+        enhanced_prompt,
+        seed=args.t2i_seed,
+        steps=args.t2i_steps
+    )
+    res_rgb_pil.save(os.path.join(output_folder, "img.jpeg"))
     
     try:
         gen_3d(res_rgb_pil, output_folder)
