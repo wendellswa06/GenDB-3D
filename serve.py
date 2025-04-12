@@ -196,7 +196,7 @@ def _text_to_3d(prompt: str, output_dir: str):
         seed=args.t2i_seed,
         steps=args.t2i_steps
     )
-    res_rgb_pil.save(os.path.join(output_folder, "img.jpg"))
+    res_rgb_pil.save(os.path.join(output_folder, "img.jpeg"))
 
     gen_3d(res_rgb_pil, output_folder)
     
@@ -208,11 +208,11 @@ def _text_to_3d(prompt: str, output_dir: str):
 if __name__ == "__main__":
     # image = Image.open("bike.png")
     # gen_3d(image, "outputs")
-    # prompt = "mystical sundial with constellation patterns and gem inlays"
-    # extra_prompts = "Angled front view, solid color background, 3d model, high quality"
-    # enhanced_prompt = f"{prompt}, {extra_prompts}"
-    # _text_to_3d(enhanced_prompt, "./")
-    uvicorn.run(app, host="0.0.0.0", port=args.port)
+    prompt = "A decorative wooden plaque with intricate floral patterns and a hanging tassel, suitable for wall display."
+    extra_prompts = "Angled front view, solid color background, 3d model, high quality, as similar view to the front one in all degrees as possible"
+    enhanced_prompt = f"{prompt}, {extra_prompts}"
+    _text_to_3d(enhanced_prompt, "./")
+    # uvicorn.run(app, host="0.0.0.0", port=args.port)
 
 
 
